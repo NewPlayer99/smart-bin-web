@@ -1,0 +1,104 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  get,
+  set,
+  update,
+  onValue
+} from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDWoRPJQ7GDlPV6Gg5Ozevsb0gHvyF6NhE",
+  authDomain: "smart-recycling-bin-5bc39.firebaseapp.com",
+  databaseURL: "https://smart-recycling-bin-5bc39-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-recycling-bin-5bc39",
+  storageBucket: "smart-recycling-bin-5bc39.appspot.com",
+  messagingSenderId: "629524361345",
+  appId: "1:629524361345:web:3fcb38929e5942fd705d80"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getDatabase(app);
+
+onAuthStateChanged(auth, user => {
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const uid = user.email.replace(/[@.]/g, "_");
+  const binRef = ref(db, `users/${uid}/bin`);
+
+  onValue(binRef, snapshot => {
+    const data = snapshot.val();
+    if (data) {
+      document.getElementById("bin1").textContent = `Bin 1: ${data.level1 ?? 0} cm`;
+      document.getElementById("bin2").textContent = `Bin 2: ${data.level2 ?? 0} cm`;
+      document.getElementById("bin3").textContent = `Bin 3: ${data.level3 ?? 0} cm`;
+      document.getElementById("weight1").textContent = `Weight 1: ${data.weight1 ?? 0} g`;
+      document.getElementById("weight2").textContent = `Weight 2: ${data.weight2 ?? 0} g`;
+      document.getElementById("weight3").textContent = `Weight 3: ${data.weight3 ?? 0} g`;
+      document.getElementById("reward").textContent = `Reward: RM ${data.totalReward ?? 0}`;
+      document.getElementById("redeemed").textContent = `Redeemed: RM ${data.totalRedeemed ?? 0}`;
+      document.getElementById("pickupStatus").textContent = `Pickup Status: ${data.pickupStatus ?? "Not Requested"}`;
+    }
+  });
+});
+
+window.redeemReward = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+  const uid = user.email.replace(/[@.]/g, "_");
+  const rewardRef = ref(db, `users/${uid}/bin/totalReward`);
+  const redeemedRef = ref(db, `users/${uid}/bin/totalRedeemed`);
+  const binRef = ref(db, `users/${uid}/bin`);
+
+  const [rewardSnap, redeemedSnap] = await Promise.all([
+    get(rewardRef),
+    get(redeemedRef)
+  ]);
+
+  const reward = rewardSnap.val() || 0;
+  const redeemed = redeemedSnap.val() || 0;
+
+  await Promise.all([
+    set(redeemedRef, redeemed + reward),
+    update(binRef, {
+      totalReward: 0,
+      weight1: 0,
+      weight2: 0,
+      weight3: 0,
+      totalWeight: 0
+    })
+  ]);
+
+  alert("Reward redeemed!");
+};
+
+window.requestPickup = () => {
+  const user = auth.currentUser;
+  if (!user) return;
+  const uid = user.email.replace(/[@.]/g, "_");
+  const binRef = ref(db, `users/${uid}/bin`);
+
+  update(binRef, {
+    pickupRequested: true,
+    pickupStatus: "Pending",
+    timestamp: new Date().toISOString()
+  }).then(() => {
+    alert("Pickup requested!");
+  });
+};
+
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  signOut(auth).then(() => {
+    window.location.href = "login.html";
+  });
+});

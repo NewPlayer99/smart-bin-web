@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pickup Request & History</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f9fc;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    .container {
+      max-width: 700px;
+      margin: 40px auto 60px auto;
+      background-color: #fff;
+      padding: 25px 30px 40px 30px;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #1a73e8;
+      margin-bottom: 25px;
+    }
+    /* Bin summary box */
+    .bin-summary {
+      display: flex;
+      justify-content: space-around;
+      background-color: #e3f2fd;
+      border: 1.5px solid #90caf9;
+      border-radius: 10px;
+      padding: 15px 0;
+      margin-bottom: 25px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #1565c0;
+    }
+    .bin-item {
+      text-align: center;
+      flex: 1;
+    }
+    .bin-item:not(:last-child) {
+      border-right: 1.5px solid #90caf9;
+    }
+    .bin-label {
+      font-size: 0.9rem;
+      color: #0d47a1;
+      margin-bottom: 6px;
+    }
+    .bin-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    /* Request Pickup button */
+    #requestBtn {
+      display: block;
+      margin: 0 auto 40px auto;
+      padding: 14px 28px;
+      font-size: 1.2rem;
+      background-color: #1a73e8;
+      border: none;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(26,115,232,0.4);
+      transition: background-color 0.3s ease;
+    }
+    #requestBtn:hover:enabled {
+      background-color: #155ab6;
+    }
+    #requestBtn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    /* Status message */
+    .status-message {
+      text-align: center;
+      font-weight: 600;
+      color: #388e3c;
+      margin-bottom: 20px;
+      min-height: 24px;
+    }
+
+    /* Pickup History Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 0.95rem;
+    }
+    thead {
+      background-color: #1a73e8;
+      color: white;
+    }
+    th, td {
+      padding: 14px 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+    tbody tr:nth-child(even) {
+      background-color: #f9fafd;
+    }
+    tbody tr:hover {
+      background-color: #d6e4ff;
+    }
+    th:last-child, td:last-child {
+      width: 110px;
+    }
+
+    /* Modal styles (unchanged) */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 450px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    .close:hover, .close:focus {
+      color: black;
+      text-decoration: none;
+    }
+    .bin-preview {
+      background-color: #f4f4f4;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 7px;
+      color: #1a237e;
+    }
+    input, select {
+      width: 100%;
+      padding: 9px 10px;
+      box-sizing: border-box;
+      font-size: 1rem;
+      border: 1.7px solid #90caf9;
+      border-radius: 6px;
+      transition: border-color 0.3s ease;
+    }
+    input:focus, select:focus {
+      border-color: #1a73e8;
+      outline: none;
+    }
+    button[type="button"], button[type="submit"] {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 4px 10px rgba(26,115,232,0.4);
+    }
+    button[type="button"]:hover, button[type="submit"]:hover {
+      background-color: #155ab6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Request Pickup</h2>
+
+    <div class="bin-summary" aria-label="Current bin weights available for pickup">
+      <div class="bin-item">
+        <div class="bin-label">Paper (g)</div>
+        <div id="paperPreview" class="bin-value">0</div>
+      </div>
+      <div class="bin-item">
+        <div class="bin-label">Plastic (g)</div>
+        <div id="plasticPreview" class="bin-value">0</div>
+      </div>
+      <div class="bin-item">
+        <div class="bin-label">Aluminium (g)</div>
+        <div id="aluminiumPreview" class="bin-value">0</div>
+      </div>
+    </div>
+
+    <button id="requestBtn" type="button" onclick="openModal()">Request Pickup</button>
+
+    <div class="status-message" id="statusMsg" role="alert" aria-live="polite"></div>
+
+    <div id="pickupModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pickupModalTitle" aria-describedby="pickupModalDesc">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()" aria-label="Close modal">&times;</span>
+        <h3 id="pickupModalTitle">Pickup Form</h3>
+        <div id="pickupModalDesc" class="bin-preview" aria-live="polite" aria-atomic="true">
+          <p><strong>Paper:</strong> <span id="modalPaperPreview">0</span> g</p>
+          <p><strong>Plastic:</strong> <span id="modalPlasticPreview">0</span> g</p>
+          <p><strong>Aluminium:</strong> <span id="modalAluminiumPreview">0</span> g</p>
+        </div>
+
+        <form id="pickupForm" onsubmit="submitPickup(); return false;">
+          <div class="form-group">
+            <label for="pickupDate">Date:</label>
+            <input type="date" id="pickupDate" required />
+          </div>
+
+          <div class="form-group">
+            <label for="pickupTime">Time:</label>
+            <input type="time" id="pickupTime" required />
+          </div>
+
+          <div class="form-group">
+            <label for="pickupLocation">Location:</label>
+            <select id="pickupLocation" required>
+              <option value="">-- Select Location --</option>
+              <option value="Block A">Block A</option>
+              <option value="Block B">Block B</option>
+              <option value="Library">Library</option>
+              <option value="Faculty of Engineering">Faculty of Engineering</option>
+            </select>
+          </div>
+
+          <button type="submit">Submit Request</button>
+        </form>
+      </div>
+    </div>
+
+    <h2>Pickup History</h2>
+    <table aria-label="Pickup history table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th>Points Earned</th>
+        </tr>
+      </thead>
+      <tbody id="history-list"></tbody>
+    </table>
+
+    <button onclick="goBack()" style="margin-top: 20px; display: block; margin-left: auto; margin-right: auto;">Back to Dashboard</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+    import { getDatabase, ref, update, push, onValue, get } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXK0o7i8cHLy_zIiG_NzI4n4LkSWJKkp0",
+      authDomain: "smart-recycling-bin-4f5ac.firebaseapp.com",
+      databaseURL: "https://smart-recycling-bin-4f5ac-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "smart-recycling-bin-4f5ac",
+      storageBucket: "smart-recycling-bin-4f5ac.appspot.com",
+      messagingSenderId: "629524361345",
+      appId: "1:629524361345:web:3fcb38929e5942fd705d80"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase(app);
+
+    let uid = "";
+    let paper = 0, plastic = 0, aluminium = 0;
+
+    const statusMsg = document.getElementById("statusMsg");
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+      uid = user.email.replace(/[@.]/g, '_');
+      fetchBinData();
+      loadPickupHistory();
+    });
+
+    function fetchBinData() {
+      const binRef = ref(db, `users/${uid}/bin`);
+      get(binRef).then(snapshot => {
+        const bin = snapshot.val() || {};
+        paper = bin.weight1 || 0;
+        plastic = bin.weight2 || 0;
+        aluminium = bin.weight3 || 0;
+
+        document.getElementById("paperPreview").textContent = paper;
+        document.getElementById("plasticPreview").textContent = plastic;
+        document.getElementById("aluminiumPreview").textContent = aluminium;
+
+        // Update modal preview also
+        document.getElementById("modalPaperPreview").textContent = paper;
+        document.getElementById("modalPlasticPreview").textContent = plastic;
+        document.getElementById("modalAluminiumPreview").textContent = aluminium;
+      });
+    }
+
+    window.openModal = () => {
+      // Check if user already has active request
+      const pickupStatusRef = ref(db, `users/${uid}/pickup/status`);
+      get(pickupStatusRef).then(snap => {
+        const status = snap.exists() ? snap.val() : null;
+        if (status === "Pending" || status === "Approved") {
+          alert("You already have an active pickup request. Please wait until it is completed or rejected before making a new request.");
+          return;
+        }
+        document.getElementById("pickupModal").style.display = "block";
+      });
+    };
+
+    window.closeModal = () => {
+      document.getElementById("pickupModal").style.display = "none";
+      statusMsg.textContent = "";
+    };
+
+    window.submitPickup = () => {
+      const date = document.getElementById("pickupDate").value;
+      const time = document.getElementById("pickupTime").value;
+      const location = document.getElementById("pickupLocation").value;
+
+      if (!date || !time || !location) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      // Double-check no active request before submitting
+      const pickupStatusRef = ref(db, `users/${uid}/pickup/status`);
+      get(pickupStatusRef).then(snap => {
+        const status = snap.exists() ? snap.val() : null;
+        if (status === "Pending" || status === "Approved") {
+          alert("You cannot submit a new pickup request until your current request is completed or rejected.");
+          return;
+        }
+
+        const pickupRef = ref(db, `users/${uid}/pickup`);
+        update(pickupRef, {
+          requested: true,
+          status: "Pending",
+          date,
+          time,
+          location,
+          paper,
+          plastic,
+          aluminium
+        }).then(() => {
+          const historyRef = ref(db, `users/${uid}/pickup/history`);
+          push(historyRef, {
+            date,
+            time,
+            location,
+            status: "Pending",
+            paper,
+            plastic,
+            aluminium,
+            pointsEarned: 0
+          });
+          statusMsg.textContent = "Pickup requested!";
+          statusMsg.className = "status-message status-success";
+          closeModal();
+          loadPickupHistory();
+        });
+      });
+    };
+
+    function loadPickupHistory() {
+      const historyRef = ref(db, `users/${uid}/pickup/history`);
+      onValue(historyRef, (snapshot) => {
+        const history = snapshot.val();
+        const tbody = document.getElementById("history-list");
+
+        if (!history) {
+          tbody.innerHTML = `<tr><td colspan="5">No pickup history available.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = Object.values(history).map(item => `
+          <tr>
+            <td>${item.date}</td>
+            <td>${item.time}</td>
+            <td>${item.location || '-'}</td>
+            <td>${item.status}</td>
+            <td>${item.pointsEarned?.toFixed(2) || '0.00'}</td>
+          </tr>
+        `).join("");
+      });
+    }
+
+    window.goBack = () => {
+      window.location.href = "dashboard_v2.html";
+    }
+  </script>
+</body>
+</html>

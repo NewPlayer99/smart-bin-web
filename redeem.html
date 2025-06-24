@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reward Shop</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      background-color: #f9f9f9;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 10px;
+      color: #333;
+    }
+    #userPoints {
+      font-weight: 600;
+      margin-bottom: 30px;
+      font-size: 18px;
+      color: #555;
+    }
+    .voucher-nav-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+
+    .voucher-viewport {
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      width: 810px;
+    }
+    .voucher-grid {
+      display: flex;
+      gap: 20px;
+    }
+
+
+    .voucher-grid::-webkit-scrollbar {
+      height: 10px;
+    }
+
+    .voucher-grid::-webkit-scrollbar-thumb {
+      background-color: #ccc;
+      border-radius: 5px;
+    }
+
+    .voucher-grid::-webkit-scrollbar-track {
+      background-color: transparent;
+    }
+
+    .voucher-card {
+      background-color: #fefefe;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      transition: box-shadow 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-width: 250px; /* Or 280px based on your design */
+      flex-shrink: 0;
+    }
+    .voucher-card:hover {
+      box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+    }
+    .voucher-name {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+    .voucher-desc {
+      font-size: 14px;
+      color: #777;
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+    .voucher-points {
+      font-weight: 700;
+      color: #27ae60;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .scroll-btn {
+      background-color: #27ae60;
+      border: none;
+      color: white;
+      font-size: 24px;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .scroll-btn:hover {
+      background-color: #219150;
+    }
+    .redeem-btn {
+      background-color: #27ae60;
+      border: none;
+      color: white;
+      padding: 12px 0;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .redeem-btn:hover {
+      background-color: #219150;
+    }
+    .message {
+      margin-top: 20px;
+      font-weight: 600;
+      color: #e74c3c;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 30px;
+      text-decoration: none;
+      color: #3498db;
+      font-weight: 600;
+      transition: color 0.2s ease;
+    }
+    .back-link:hover {
+      color: #2980b9;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #fff;
+      border-radius: 12px;
+      padding: 25px 30px;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      transform: scale(0.8);
+      opacity: 0;
+      animation: scaleIn 0.3s ease forwards;
+    }
+
+    .modal-header {
+      font-weight: bold;
+      margin-bottom: 15px;
+      font-size: 1.25rem;
+      color: #155ab6;
+      text-align: center;
+    }
+
+    @keyframes scaleIn {
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Redeemed Vouchers Section */
+    .redeemed-section {
+      margin-top: 40px;
+      text-align: center;
+    }
+
+    .redeemed-section h2 {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+    }
+
+    .redeemed-voucher-card {
+      background-color: #fefefe;
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      transition: box-shadow 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fadeIn 1s ease forwards;
+    }
+
+    .redeemed-voucher-card:hover {
+      box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+    }
+
+    .redeemed-voucher-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    .redeemed-voucher-points {
+      font-weight: 700;
+      color: #e67e22;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .redeemed-voucher-date {
+      font-size: 14px;
+      color: #777;
+    }
+
+    /* Fading effects */
+    .fade-out {
+      animation: fadeOut 0.5s forwards;
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+
+    /* Fade In Animation for Redeemed Vouchers */
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Reward Shop</h1>
+    <p id="userPoints">Loading your points...</p>
+
+
+    <div class="voucher-nav-wrapper">
+      
+      <div class="voucher-viewport">
+        <div class="voucher-grid" id="voucherGrid">
+          <!-- Voucher cards inserted here -->
+        </div>
+      </div>
+    </div>
+
+
+    <p class="message" id="message"></p>
+
+    <a href="dashboard_v2.html" class="back-link">← Back to Dashboard</a>
+
+    <!-- Redeemed Vouchers Section -->
+    <div class="redeemed-section" id="redeemedSection">
+      <h2>Your Redeemed Vouchers</h2>
+      <div id="redeemedVouchersGrid">
+        <!-- Redeemed vouchers will be displayed here -->
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+    import { getDatabase, ref, get, runTransaction, push, set } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXK0o7i8cHLy_zIiG_NzI4n4LkSWJKkp0",
+      authDomain: "smart-recycling-bin-4f5ac.firebaseapp.com",
+      databaseURL: "https://smart-recycling-bin-4f5ac-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "smart-recycling-bin-4f5ac",
+      storageBucket: "smart-recycling-bin-4f5ac.appspot.com",
+      messagingSenderId: "629524361345",
+      appId: "1:629524361345:web:3fcb38929e5942fd705d80"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase(app);
+
+    const userPointsEl = document.getElementById("userPoints");
+    const voucherGrid = document.getElementById("voucherGrid");
+    const messageEl = document.getElementById("message");
+    const redeemedVouchersGrid = document.getElementById("redeemedVouchersGrid");
+
+    const vouchers = [
+      {
+        id: "voucher1",
+        name: "RM5 Grocery Voucher",
+        description: "Use this voucher to get RM5 off at your favorite grocery store.",
+        costPoints: 50
+      },
+      {
+        id: "voucher2",
+        name: "RM10 Prepaid Top-Up",
+        description: "Top-up your prepaid mobile with RM10 credit instantly.",
+        costPoints: 90
+      },
+      {
+        id: "voucher3",
+        name: "RM15 Food Voucher",
+        description: "Enjoy a RM15 discount at participating restaurants.",
+        costPoints: 140
+      },
+      {
+        id: "voucher4",
+        name: "Free Bento Meal",
+        description: "Redeem a complimentary bento meal at selected outlets.",
+        costPoints: 120
+      },
+      {
+        id: "voucher5",
+        name: "RM20 E-Wallet Credit",
+        description: "Get RM20 added to your digital wallet instantly.",
+        costPoints: 180
+      },
+      {
+        id: "voucher6",
+        name: "RM10 Café Gift Card",
+        description: "Use this gift card to enjoy RM10 worth of beverages at any partner café.",
+        costPoints: 100
+      }
+    ];
+
+    let currentUserId = null;
+    let currentUserPoints = 0;
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      currentUserId = user.email.replace(/[@.]/g, "_");
+
+      const pointsRef = ref(db, `users/${currentUserId}/points`);
+      const snapshot = await get(pointsRef);
+      currentUserPoints = snapshot.val() || 0;
+
+      userPointsEl.textContent = `You have ${currentUserPoints.toFixed(2)} points.`;
+
+      loadVouchers();
+      loadRedeemedVouchers();
+    });
+
+    function loadVouchers() {
+      voucherGrid.innerHTML = vouchers
+        .map(voucher => {
+          const canRedeem = currentUserPoints >= voucher.costPoints;
+          return `
+            <div class="voucher-card">
+              <div class="voucher-name">${voucher.name}</div>
+              <div class="voucher-desc">${voucher.description}</div>
+              <div class="voucher-points">Cost: ${voucher.costPoints} points</div>
+              <button class="redeem-btn" ${canRedeem ? '' : 'disabled'} data-id="${voucher.id}">
+                ${canRedeem ? 'Redeem' : 'Not enough points'}
+              </button>
+            </div>
+          `;
+        })
+        .join("");
+
+      document.querySelectorAll(".redeem-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          redeemVoucher(btn.getAttribute("data-id"));
+        });
+      });
+    }
+
+      let currentScrollIndex = 0;
+
+    function scrollVouchers(direction) {
+      const container = document.querySelector('.voucher-viewport');
+      const cardWidth = 270; // 250px + 20px gap
+      const scrollAmount = cardWidth * 2 * direction;
+
+      container.scrollBy({
+        left: scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+
+    async function redeemVoucher(voucherId) {
+      const voucher = vouchers.find(v => v.id === voucherId);
+      if (!voucher) return;
+
+      if (currentUserPoints < voucher.costPoints) {
+        messageEl.textContent = "Insufficient points to redeem this voucher.";
+        return;
+      }
+
+      const pointsRef = ref(db, `users/${currentUserId}/points`);
+      try {
+        await runTransaction(pointsRef, current => {
+          const newPoints = (current || 0) - voucher.costPoints;
+          console.log(`Current Points: ${current}, Points to subtract: ${voucher.costPoints}, New Points: ${newPoints}`);
+
+          return newPoints;  // This will update the user's points in the database
+        });
+
+        messageEl.style.color = "green";
+        messageEl.textContent = `Successfully redeemed: ${voucher.name}`;
+
+        saveRedeemedVoucher(voucher);
+
+        // Send Telegram message
+        const chatId = "630354452";  // Update this with the user's actual chat ID if available
+        sendTelegramMessage(chatId, `🎉 Congratulations! You've redeemed the "${voucher.name}" voucher! You've lost ${voucher.costPoints} points. Keep up the good work! 🌟`);
+
+        // Refresh points and vouchers display
+        const snapshot = await get(pointsRef);
+        currentUserPoints = snapshot.val() || 0;
+        userPointsEl.textContent = `You have ${currentUserPoints.toFixed(2)} points.`;
+
+        loadRedeemedVouchers();
+
+        // Add fade-in effect for redeemed voucher
+        const newVoucherCard = `
+          <div class="redeemed-voucher-card">
+            <div class="redeemed-voucher-name">${voucher.name}</div>
+            <div class="redeemed-voucher-points">Points Used: ${voucher.costPoints}</div>
+            <div class="redeemed-voucher-date">Redeemed on: ${new Date().toLocaleDateString()}</div>
+          </div>
+        `;
+
+        redeemedVouchersGrid.innerHTML += newVoucherCard;
+
+      } catch (error) {
+        messageEl.style.color = "red";
+        messageEl.textContent = "Error redeeming voucher. Please try again.";
+        console.error(error);
+      }
+    }
+
+    async function saveRedeemedVoucher(voucher) {
+      const redeemedRef = ref(db, `users/${currentUserId}/redeemedVouchers`);
+      const newVoucherRef = push(redeemedRef);
+      await set(newVoucherRef, {
+        voucherId: voucher.id,
+        name: voucher.name,
+        costPoints: voucher.costPoints,
+        dateRedeemed: new Date().toISOString()
+      });
+    }
+
+    function loadRedeemedVouchers() {
+      const redeemedRef = ref(db, `users/${currentUserId}/redeemedVouchers`);
+      get(redeemedRef).then(snapshot => {
+        // Clear existing content and apply fade-out effect
+        redeemedVouchersGrid.innerHTML = '';
+        const noVouchersMessage = '<p>No redeemed vouchers yet.</p>';
+        
+        // If there are redeemed vouchers, display them
+        if (snapshot.exists()) {
+          const redeemedVouchers = snapshot.val();
+          if (Object.keys(redeemedVouchers).length > 0) {
+            redeemedVouchersGrid.innerHTML = Object.keys(redeemedVouchers).map(key => {
+              const voucher = redeemedVouchers[key];
+              return `
+                <div class="redeemed-voucher-card">
+                  <div class="redeemed-voucher-name">${voucher.name}</div>
+                  <div class="redeemed-voucher-points">Points Used: ${voucher.costPoints}</div>
+                  <div class="redeemed-voucher-date">Redeemed on: ${new Date(voucher.dateRedeemed).toLocaleDateString()}</div>
+                </div>
+              `;
+            }).join("");
+            // Apply fade-in effect to redeemed vouchers grid
+            redeemedVouchersGrid.classList.add('fade-in');
+          } else {
+            // No redeemed vouchers, so we display the message
+            redeemedVouchersGrid.innerHTML = noVouchersMessage;
+          }
+        } else {
+          // If no data, show the no vouchers message
+          redeemedVouchersGrid.innerHTML = noVouchersMessage;
+        }
+        
+        // Add fade-out effect to the 'No redeemed vouchers yet.' message if there are redeemed vouchers
+        if (redeemedVouchersGrid.innerHTML !== noVouchersMessage) {
+          const messageElement = document.querySelector('#redeemedVouchersGrid p');
+          if (messageElement) {
+            messageElement.classList.add('fade-out');
+            setTimeout(() => {
+              messageElement.style.display = 'none'; // Hide after fade-out
+            }, 500); // Wait for fade-out to complete (0.5s)
+          }
+        }
+      });
+    }
+
+
+
+
+    const TELEGRAM_BOT_TOKEN = "7827184038:AAGmnVYHBZlwcTpvm1557vMFDCUQqtWbckc";
+
+    async function sendTelegramMessage(chatId, message) {
+      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+      await fetch(url);
+    }
+  </script>
+</body>
+</html>

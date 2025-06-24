@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); }
+    .modal-content { background: #fff; padding: 20px; margin: 10% auto; width: 90%; max-width: 500px; border-radius: 10px; }
+    .modal-header { font-weight: bold; margin-bottom: 10px; }
+    table { width: 80%; margin: 20px auto; border-collapse: collapse; text-align: center; border: 1px solid #ddd; }
+    table thead { background-color: #f2f2f2; }
+    table th, table td { border: 1px solid #ccc; padding: 12px 15px; }
+    .button-group { text-align: center; margin-top: 20px; }
+    .button-group button { margin: 0 10px; padding: 10px 15px; border: none; background-color: #4CAF50; color: white; border-radius: 5px; cursor: pointer; }
+    .button-group button:hover { background-color: #45a049; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1 style="text-align:center">Admin Dashboard</h1>
+  <div class="status-message" id="statusMsg"></div>
+  <p style="text-align:center"><strong>Total Registered Users:</strong> <span id="userCount">Loading...</span></p>
+  <p style="text-align:center"><strong>Total Pending Pickup Requests:</strong> <span id="pendingCount">Loading...</span></p>
+  <p style="text-align:center"><strong>Total Ongoing Requests:</strong> <span id="ongoingCount">Loading...</span></p>
+  <p style="text-align:center"><strong>Total Completed Requests:</strong> <span id="completeCount">Loading...</span></p>
+
+  <div class="button-group">
+    <button onclick="window.location.href='admin_pickup_request.html'">View Pickup History</button>
+    <button onclick="window.location.href='user_management.html'">User Management</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <h2 style="text-align:center">User Overview</h2>
+  <table>
+    <thead>
+      <tr><th>Email</th><th>Status</th><th>Action</th></tr>
+    </thead>
+    <tbody id="userList"></tbody>
+  </table>
+</div>
+
+<div id="pickupModal" class="modal">
+  <div class="modal-content">
+    <h3 class="modal-header">Pickup Request Detail</h3>
+    <p><strong>Email:</strong> <span id="modalEmail"></span></p>
+    <p><strong>Date:</strong> <span id="modalDate"></span></p>
+    <p><strong>Time:</strong> <span id="modalTime"></span></p>
+    <p><strong>Location:</strong> <span id="modalLocation"></span></p>
+    <p><strong>Paper:</strong> <span id="modalPaper"></span> g</p>
+    <p><strong>Plastic:</strong> <span id="modalPlastic"></span> g</p>
+    <p><strong>Aluminium:</strong> <span id="modalAluminium"></span> g</p>
+    <p><strong>Total Points:</strong> <span id="modalPoints"></span> pts</p>
+    <div id="modalButtons"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js';
+  import { getDatabase, ref, get, set, update, push, runTransaction } from 'https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js';
+  import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js';
+
+  const firebaseConfig = { /* your firebase config */ };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth();
+
+  const TELEGRAM_BOT_TOKEN = "<your_bot_token_here>";
+  async function sendTelegramMessage(chatId, message) {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
+    await fetch(url);
+  }
+
+  let userMap = {};
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) return window.location.href = 'login.html';
+    const uid = user.email.replace(/[@.]/g, '_');
+    get(ref(db, `users/${uid}/role`)).then(snap => {
+      if (snap.exists() && snap.val() === 'admin') loadDashboard();
+      else document.getElementById('statusMsg').textContent = 'Unauthorized Access';
+    });
+  });
+
+  async function loadDashboard() {
+    const usersSnap = await get(ref(db, 'users'));
+    if (!usersSnap.exists()) return;
+    const users = usersSnap.val();
+    const table = document.getElementById('userList');
+    let pendingCount = 0, userCount = 0, ongoingCount = 0, completeCount=0;
+    table.innerHTML = '';
+
+    for (const uid in users) {
+      const user = users[uid];
+      if (user.role === 'admin') continue;
+
+      userCount++;
+      const history = user.pickup?.history || {};
+      for (const key in history) if (history[key].status === 'Completed') completeCount++;
+
+      const status = user.pickup?.status;
+      if (!status || status === 'Rejected' || status === 'Completed') continue;
+      userMap[uid] = user;
+
+      if (status === 'Pending') pendingCount++;
+      if (status === 'Approved') ongoingCount++;
+
+      table.innerHTML += `<tr><td>${uid.replace(/_/g, '.')}</td><td>${status}</td><td><button onclick="showModal('${uid}')">Review</button></td></tr>`;
+    }
+
+    document.getElementById('userCount').textContent = userCount;
+    document.getElementById('pendingCount').textContent = pendingCount;
+    document.getElementById('ongoingCount').textContent = ongoingCount;
+    document.getElementById('completeCount').textContent = completeCount;
+  }
+
+  window.showModal = (uid) => {
+    const data = userMap[uid];
+    const { date, time, location, paper, plastic, aluminium, status } = data.pickup;
+    const paperVal = parseFloat(paper || 0), plasticVal = parseFloat(plastic || 0), alumVal = parseFloat(aluminium || 0);
+    const points = (paperVal * 0.3 + plasticVal * 0.5 + alumVal * 0.7).toFixed(2);
+
+    document.getElementById('modalEmail').textContent = uid.replace(/_/g, '.');
+    document.getElementById('modalDate').textContent = date;
+    document.getElementById('modalTime').textContent = time;
+    document.getElementById('modalLocation').textContent = location;
+    document.getElementById('modalPaper').textContent = paperVal;
+    document.getElementById('modalPlastic').textContent = plasticVal;
+    document.getElementById('modalAluminium').textContent = alumVal;
+    document.getElementById('modalPoints').textContent = points;
+
+    document.getElementById('modalButtons').innerHTML = status === 'Pending'
+      ? `<button onclick="actOnRequest('${uid}', 'Approved')">Approve</button><button onclick="actOnRequest('${uid}', 'Rejected')">Reject</button>`
+      : `<button onclick="actOnRequest('${uid}', 'Completed')">Complete</button>`;
+
+    document.getElementById('pickupModal').style.display = 'block';
+  };
+
+  window.actOnRequest = async (uid, newStatus) => {
+    const pickupRef = ref(db, `users/${uid}/pickup`);
+    const pickupSnap = await get(pickupRef);
+    const user = userMap[uid];
+    const chatId = user.telegramChatId || "630354452";
+
+    if (pickupSnap.exists()) {
+      const pickup = pickupSnap.val();
+
+      if (newStatus === 'Completed') {
+        const paper = parseFloat(pickup.paper || 0);
+        const plastic = parseFloat(pickup.plastic || 0);
+        const aluminium = parseFloat(pickup.aluminium || 0);
+        const pointsEarned = paper * 0.3 + plastic * 0.5 + aluminium * 0.7;
+
+        const historyRef = ref(db, `users/${uid}/pickup/history`);
+        const newHistRef = push(historyRef);
+        const historyEntry = { ...pickup, status: newStatus, pointsEarned, timestamp: new Date().toISOString() };
+        await set(newHistRef, historyEntry);
+
+        await update(pickupRef, { status: newStatus });
+        const pointRef = ref(db, `users/${uid}/points`);
+        await runTransaction(pointRef, current => (current || 0) + pointsEarned);
+        await sendTelegramMessage(chatId, `🎉 Your recycling pickup has been completed. You've earned ${pointsEarned.toFixed(2)} points! 🌿♻️`);
+      }
+
+      else if (newStatus === 'Rejected') {
+        const historyRef = ref(db, `users/${uid}/pickup/history`);
+        const newHistRef = push(historyRef);
+        const historyEntry = { ...pickup, status: newStatus, timestamp: new Date().toISOString() };
+        await set(newHistRef, historyEntry);
+        await update(pickupRef, { status: newStatus });
+        await sendTelegramMessage(chatId, `❌ Your recycling pickup request has been rejected.`);
+      }
+
+      else if (newStatus === 'Approved') {
+        await update(pickupRef, { status: newStatus });
+        await sendTelegramMessage(chatId, `✅ Your pickup request has been approved and is now ongoing.`);
+      }
+    }
+
+    document.getElementById('pickupModal').style.display = 'none';
+    loadDashboard();
+  };
+
+  window.logout = async () => {
+    await set(ref(db, 'activeDeviceUser'), null);
+    await signOut(auth);
+    window.location.href = 'login.html';
+  };
+
+  window.onclick = (event) => {
+    const modal = document.getElementById('pickupModal');
+    if (event.target === modal) modal.style.display = 'none';
+  };
+</script>
+</body>
+</html>

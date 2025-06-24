@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Recycling Bin Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Smart Recycling Bin Dashboard</h1>
+    <h2 id="welcomeMessage">Hello!</h2>
+
+    <div class="button-group">
+      <button onclick="goToDetails()">View Bin's Detail</button>
+      <button onclick="redeemReward()">Redeem Reward</button>
+      <button onclick="requestPickup()">Request Pickup</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script type="module">
+
+  // Import the functions you need from the SDKs you need
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
+
+  // TODO: Add SDKs for Firebase products that you want to use
+
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+
+  // Your web app's Firebase configuration
+
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+  const firebaseConfig = {
+
+    apiKey: "AIzaSyDWoRPJQ7GDlPV6Gg5Ozevsb0gHvyF6NhE",
+
+    authDomain: "smart-recycling-bin-5bc39.firebaseapp.com",
+
+    databaseURL: "https://smart-recycling-bin-5bc39-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+    projectId: "smart-recycling-bin-5bc39",
+
+    storageBucket: "smart-recycling-bin-5bc39.firebasestorage.app",
+
+    messagingSenderId: "629524361345",
+
+    appId: "1:629524361345:web:720afc573aae2a5b705d80",
+
+    measurementId: "G-G8QC17Q5LE"
+
+  };
+
+
+  // Initialize Firebase
+
+  const app = initializeApp(firebaseConfig);
+
+  const analytics = getAnalytics(app);
+
+    let currentUserEmail = "";
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      currentUserEmail = user.email;
+      const username = user.email.split("@")[0];
+      document.getElementById("welcomeMessage").textContent = `Hello ${username}!`;
+    });
+
+    window.redeemReward = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      const uid = user.email.replace(/[@.]/g, "_");
+      const rewardRef = ref(db, `users/${uid}/bin/totalReward`);
+      const redeemedRef = ref(db, `users/${uid}/bin/totalRedeemed`);
+      const binRef = ref(db, `users/${uid}/bin`);
+
+      const [rewardSnap, redeemedSnap] = await Promise.all([
+        get(rewardRef),
+        get(redeemedRef)
+      ]);
+
+      const reward = rewardSnap.val() || 0;
+      const redeemed = redeemedSnap.val() || 0;
+
+      await Promise.all([
+        set(redeemedRef, redeemed + reward),
+        update(binRef, {
+          totalReward: 0,
+          weight1: 0,
+          weight2: 0,
+          weight3: 0,
+          totalWeight: 0
+        })
+      ]);
+
+      alert("Reward redeemed!");
+    };
+
+    window.requestPickup = () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      const uid = user.email.replace(/[@.]/g, "_");
+      const binRef = ref(db, `users/${uid}/bin`);
+
+      update(binRef, {
+        pickupRequested: true,
+        pickupStatus: "Pending",
+        timestamp: new Date().toISOString()
+      }).then(() => {
+        alert("Pickup requested!");
+      });
+    };
+
+    window.goToDetails = () => {
+      window.location.href = "details.html";
+    };
+
+    window.logout = () => {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+		
+      });
+    };
+  </script>
+</body>
+</html>

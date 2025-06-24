@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Recycling Bin Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f9;
+      margin: 0;
+      padding: 0;
+      color: #2c3e50;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 500px;
+      width: 90%;
+      background: white;
+      margin: 40px 0;
+      padding: 30px 25px 40px 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 8px;
+      color: #1a73e8;
+    }
+    h2#welcomeMessage {
+      font-weight: 400;
+      color: #555;
+      margin-top: 0;
+      margin-bottom: 28px;
+      font-size: 1.3rem;
+    }
+    .summary-cards {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .card {
+      background: #e8f0fe;
+      flex: 1 1 30%;
+      padding: 18px 12px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(26,115,232,0.15);
+      min-width: 130px;
+    }
+    .card h3 {
+      font-weight: 600;
+      font-size: 1.15rem;
+      margin: 0 0 6px 0;
+      color: #155ab6;
+    }
+    .card p {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0d47a1;
+    }
+    .status-card {
+      background: #fff3e0;
+      color: #e65100;
+      font-weight: 600;
+      font-size: 1.15rem;
+    }
+    .button-group {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .button-group button,
+    .button-group a button {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      padding: 14px 0;
+      font-size: 1.1rem;
+      border-radius: 35px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+      transition: background-color 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .button-group button:hover,
+    .button-group a button:hover {
+      background-color: #155ab6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Smart Recycling Bin Dashboard</h1>
+    <h2 id="welcomeMessage">Hello!</h2>
+
+    <div class="summary-cards">
+      <div class="card">
+        <h3>Total Points</h3>
+        <p id="totalPoints">0</p>
+      </div>
+      <div class="card">
+        <h3>Bin Weights (g)</h3>
+        <p id="binWeights">P: 0 | Pl: 0 | Al: 0</p>
+      </div>
+      <div class="card status-card" title="Current Pickup Request Status">
+        <h3>Pickup Status</h3>
+        <p id="pickupStatus">None</p>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button onclick="goToDetails()">View Bin Detail</button>
+      <a href="redeem.html"><button>Redeem Reward</button></a>
+      <a href="pickup_history.html"><button>Request Pickup</button></a>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      get,
+      set
+    } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXK0o7i8cHLy_zIiG_NzI4n4LkSWJKkp0",
+      authDomain: "smart-recycling-bin-4f5ac.firebaseapp.com",
+      databaseURL: "https://smart-recycling-bin-4f5ac-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "smart-recycling-bin-4f5ac",
+      storageBucket: "smart-recycling-bin-4f5ac.appspot.com",
+      messagingSenderId: "629524361345",
+      appId: "1:629524361345:web:3fcb38929e5942fd705d80"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase(app);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const uid = user.email.replace(/[@.]/g, "_");
+      const username = user.email.split("@")[0];
+      document.getElementById("welcomeMessage").textContent = `Hello ${username}!`;
+
+      try {
+        // Fetch points earned
+        const pointsSnap = await get(ref(db, `users/${uid}/points`));
+        const points = pointsSnap.exists() ? pointsSnap.val() : 0;
+        document.getElementById("totalPoints").textContent = points.toFixed(2);
+
+        // Fetch bin weights
+        const binSnap = await get(ref(db, `users/${uid}/bin`));
+        const bin = binSnap.exists() ? binSnap.val() : {};
+        const paper = bin.weight1 || 0;
+        const plastic = bin.weight2 || 0;
+        const aluminium = bin.weight3 || 0;
+        document.getElementById("binWeights").textContent = `P: ${paper} | Pl: ${plastic} | Al: ${aluminium}`;
+
+        // Fetch pickup request status
+        const pickupSnap = await get(ref(db, `users/${uid}/pickup/status`));
+        const status = pickupSnap.exists() ? pickupSnap.val() : null;
+        let statusText = "None";
+        if (status === "Pending") statusText = "Pending";
+        else if (status === "Approved") statusText = "Ongoing";
+        else if (status === "Completed") statusText = "Completed";
+        else if (status === "Rejected") statusText = "Rejected";
+
+        const pickupStatusElem = document.getElementById("pickupStatus");
+        pickupStatusElem.textContent = statusText;
+        if (statusText === "Pending") {
+          pickupStatusElem.style.color = "#f57c00"; // orange
+        } else if (statusText === "Ongoing") {
+          pickupStatusElem.style.color = "#388e3c"; // green
+        } else if (statusText === "Rejected") {
+          pickupStatusElem.style.color = "#d32f2f"; // red
+        } else if (statusText === "Completed") {
+          pickupStatusElem.style.color = "#1976d2"; // blue
+        } else {
+          pickupStatusElem.style.color = "#555";
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    });
+
+    window.goToDetails = () => {
+      window.location.href = "details.html";
+    };
+
+    window.logout = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      const uid = user.email.replace(/[@.]/g, "_");
+      // Clear activeDeviceUser
+      await set(ref(db, "activeDeviceUser"), null);
+      await signOut(auth);
+      window.location.href = "login.html";
+    };
+  </script>
+</body>
+</html>

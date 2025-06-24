@@ -1,0 +1,83 @@
+<!-- pickup.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Request Pickup</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Pickup Request Form</h2>
+    <form id="pickupForm">
+      <label>Date:</label>
+      <input type="date" id="date" required><br><br>
+
+      <label>Time:</label>
+      <input type="time" id="time" required><br><br>
+
+      <label>Location:</label>
+      <select id="location" required>
+        <option value="" disabled selected>Select location</option>
+        <option value="Block A">Block A</option>
+        <option value="Block B">Block B</option>
+        <option value="Library">Library</option>
+        <option value="Faculty of Engineering">Faculty of Engineering</option>
+      </select><br><br>
+
+      <button type="submit">Submit Request</button>
+    </form>
+    <br>
+    <a href="dashboard_v2.html">Back to Dashboard</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+    import { getDatabase, ref, update, set } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXK0o7i8cHLy_zIiG_NzI4n4LkSWJKkp0",
+      authDomain: "smart-recycling-bin-4f5ac.firebaseapp.com",
+      databaseURL: "https://smart-recycling-bin-4f5ac-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "smart-recycling-bin-4f5ac",
+      storageBucket: "smart-recycling-bin-4f5ac.appspot.com",
+      messagingSenderId: "629524361345",
+      appId: "1:629524361345:web:3fcb38929e5942fd705d80"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase(app);
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) return (window.location.href = "login.html");
+      const uid = user.email.replace(/[@.]/g, "_");
+      const pickupRef = ref(db, `users/${uid}/pickup`);
+
+      document.getElementById("pickupForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const date = document.getElementById("date").value;
+        const time = document.getElementById("time").value;
+        const location = document.getElementById("location").value;
+        const timestamp = new Date().toLocaleString("en-GB");
+
+        await update(pickupRef, {
+          requested: true,
+          status: "Pending",
+          date,
+          time,
+          location,
+          timestamp
+        });
+
+        const logRef = ref(db, `users/${uid}/pickup/history/${Date.now()}`);
+        await set(logRef, `Requested on ${date} at ${time} (${location})`);
+
+        alert("Pickup request submitted!");
+        window.location.href = "dashboard_v2.html";
+      });
+    });
+  </script>
+</body>
+</html>

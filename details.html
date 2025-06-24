@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bin Details</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f9fc;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .container {
+      max-width: 500px;
+      width: 90%;
+      background-color: #fff;
+      margin: 40px 0;
+      padding: 30px 25px 40px 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      animation: fadeIn 0.8s ease forwards;
+      opacity: 0;
+    }
+    h2 {
+      margin-bottom: 24px;
+      color: #1a73e8;
+      font-weight: 600;
+    }
+    .bin-details {
+      text-align: left;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+    .bin-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background-color: #e3f2fd;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      box-shadow: 0 2px 6px rgba(26,115,232,0.15);
+      transition: background-color 0.3s ease;
+      opacity: 0;
+      animation: fadeInUp 0.5s ease forwards;
+    }
+    .bin-row:hover {
+      background-color: #bbdefb;
+    }
+    .bin-label {
+      color: #1565c0;
+    }
+    .bin-value {
+      font-weight: 700;
+      color: #0d47a1;
+    }
+    .status-label {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-top: 20px;
+      padding: 15px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(26,115,232,0.2);
+      color: white;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+      animation: pulse 2.5s infinite;
+    }
+    .status-not-requested {
+      background-color: #757575;
+      animation: none;
+    }
+    .status-pending {
+      background-color: #f57c00;
+    }
+    .status-approved {
+      background-color: #388e3c;
+    }
+    .status-completed {
+      background-color: #1976d2;
+    }
+    .status-rejected {
+      background-color: #d32f2f;
+    }
+    button {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      padding: 14px 0;
+      font-size: 1.1rem;
+      border-radius: 35px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+      transition: background-color 0.3s ease;
+      margin-top: 15px;
+    }
+    button:hover {
+      background-color: #155ab6;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+    @keyframes fadeInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 2px 10px rgba(26,115,232,0.2);
+      }
+      50% {
+        box-shadow: 0 2px 20px rgba(26,115,232,0.6);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main">
+    <h2>Bin Details</h2>
+    <div id="details" class="bin-details" aria-live="polite" aria-atomic="true">
+      Loading bin data...
+    </div>
+    <button onclick="goBack()" aria-label="Back to dashboard">Back to Dashboard</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXK0o7i8cHLy_zIiG_NzI4n4LkSWJKkp0",
+      authDomain: "smart-recycling-bin-4f5ac.firebaseapp.com",
+      databaseURL: "https://smart-recycling-bin-4f5ac-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "smart-recycling-bin-4f5ac",
+      storageBucket: "smart-recycling-bin-4f5ac.appspot.com",
+      messagingSenderId: "629524361345",
+      appId: "1:629524361345:web:3fcb38929e5942fd705d80"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase(app);
+
+    function sendTelegram(msg) {
+      const TOKEN = "7827184038:AAGmnVYHBZlwcTpvm1557vMFDCUQqtWbckc";
+      const CHAT_ID = "630354452";
+      fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}`);
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const uid = user.email.replace(/[@.]/g, "_");
+      const binRef = ref(db, `users/${uid}/bin`);
+      const container = document.getElementById("details");
+
+      onValue(binRef, (snapshot) => {
+        const data = snapshot.val();
+
+        if (!data) {
+          container.textContent = "No bin data available.";
+          return;
+        }
+
+        const statusColors = {
+          "Not Requested": "status-not-requested",
+          "Pending": "status-pending",
+          "Approved": "status-approved",
+          "Completed": "status-completed",
+          "Rejected": "status-rejected"
+        };
+
+        const statusText = data.pickupStatus ?? "Not Requested";
+        const statusClass = statusColors[statusText] || "status-not-requested";
+
+        container.innerHTML = `
+          <div class="bin-row" style="animation-delay: 0.1s"><span class="bin-label">Bin 1 Level:</span> <span class="bin-value">${data.level1 ?? 0} cm</span></div>
+          <div class="bin-row" style="animation-delay: 0.2s"><span class="bin-label">Bin 2 Level:</span> <span class="bin-value">${data.level2 ?? 0} cm</span></div>
+          <div class="bin-row" style="animation-delay: 0.3s"><span class="bin-label">Bin 3 Level:</span> <span class="bin-value">${data.level3 ?? 0} cm</span></div>
+          <div class="bin-row" style="animation-delay: 0.4s"><span class="bin-label">Paper Weight:</span> <span class="bin-value">${data.weight1 ?? 0} g</span></div>
+          <div class="bin-row" style="animation-delay: 0.5s"><span class="bin-label">Plastic Weight:</span> <span class="bin-value">${data.weight2 ?? 0} g</span></div>
+          <div class="bin-row" style="animation-delay: 0.6s"><span class="bin-label">Aluminium Weight:</span> <span class="bin-value">${data.weight3 ?? 0} g</span></div>
+        `;
+
+        // Send Telegram alert if any bin is full
+        const threshold = 28.5;
+        const names = ["Paper", "Plastic", "Aluminium"];
+        [data.level1, data.level2, data.level3].forEach((level, i) => {
+          if ((level ?? 0) >= threshold) {
+            sendTelegram(`🚨 ${names[i]} bin is FULL. Please empty it.`);
+          }
+        });
+      });
+    });
+
+    window.goBack = () => {
+      window.location.href = "dashboard_v2.html";
+    };
+  </script>
+</body>
+</html>

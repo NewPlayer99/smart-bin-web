@@ -1,0 +1,171 @@
+<!-- REGISTER.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart Recycling Bin - Register</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #1a73e8, #4facfe);
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      user-select: none;
+    }
+    .container {
+      background: #fff;
+      color: #333;
+      padding: 40px 35px 50px 35px;
+      border-radius: 15px;
+      box-shadow: 0 20px 40px rgba(26, 115, 232, 0.3);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+    }
+    h2 {
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #1a73e8;
+    }
+    .catchphrase {
+      font-weight: 400;
+      font-style: italic;
+      margin-bottom: 30px;
+      color: #4a90e2;
+      font-size: 1.1rem;
+    }
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 14px 16px;
+      margin: 12px 0 20px 0;
+      border: 1.8px solid #ddd;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+      font-family: inherit;
+    }
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      border-color: #1a73e8;
+      outline: none;
+      box-shadow: 0 0 8px rgba(26, 115, 232, 0.4);
+    }
+    button {
+      width: 100%;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      padding: 14px 0;
+      border-radius: 35px;
+      font-size: 1.15rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 15px rgba(26, 115, 232, 0.5);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      user-select: none;
+    }
+    button:hover {
+      background-color: #155ab6;
+      box-shadow: 0 8px 25px rgba(21, 90, 182, 0.7);
+    }
+    p {
+      margin-top: 28px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    p a {
+      color: #1a73e8;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s ease;
+    }
+    p a:hover {
+      color: #155ab6;
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 440px) {
+      .container {
+        padding: 30px 20px 40px 20px;
+      }
+      input[type="email"],
+      input[type="password"] {
+        padding: 12px 14px;
+      }
+      button {
+        font-size: 1rem;
+        padding: 12px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main" aria-labelledby="registerTitle">
+    <h2 id="registerTitle">Create Your Account</h2>
+    <div class="catchphrase" aria-live="polite">
+      "Join us in making the world cleaner, one recycle at a time."
+    </div>
+    <input type="email" id="registerEmail" placeholder="Email" aria-label="Email" required />
+    <input type="password" id="registerPassword" placeholder="Password" aria-label="Password" required />
+    <button onclick="register()" aria-describedby="registerDesc">Register</button>
+    <p id="registerDesc">Already have an account? <a href="login.html">Login here</a></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXK0o7i8cHLy_zIiG_NzI4n4LkSWJKkp0",
+      authDomain: "smart-recycling-bin-4f5ac.firebaseapp.com",
+      databaseURL: "https://smart-recycling-bin-4f5ac-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "smart-recycling-bin-4f5ac",
+      storageBucket: "smart-recycling-bin-4f5ac.appspot.com",
+      messagingSenderId: "629524361345",
+      appId: "1:629524361345:web:3fcb38929e5942fd705d80"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    window.register = function () {
+      const email = document.getElementById("registerEmail").value.trim();
+      const password = document.getElementById("registerPassword").value;
+
+      if (!email || !password) {
+        alert("Please enter your email and password.");
+        return;
+      }
+
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => {
+          const safeEmail = email.replace(/[@.]/g, "_");
+          set(ref(db, `users/${safeEmail}`), {
+            profile: { email },
+            role: "user"
+          });
+          alert("✅ Registered successfully!");
+          window.location.href = "login.html";
+        })
+        .catch((error) => {
+          alert("❌ Error: " + error.message);
+        });
+    }
+  </script>
+</body>
+</html>

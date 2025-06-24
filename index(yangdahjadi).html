@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Recycling Bin Dashboard</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+    import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDWoRPJQ7GDlPV6Gg5Ozevsb0gHvyF6NhE",
+      authDomain: "smart-recycling-bin-5bc39.firebaseapp.com",
+      databaseURL: "https://smart-recycling-bin-5bc39-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "smart-recycling-bin-5bc39",
+      storageBucket: "smart-recycling-bin-5bc39.appspot.com",
+      messagingSenderId: "629524361345",
+      appId: "1:629524361345:web:3fcb38929e5942fd705d80",
+      measurementId: "G-16E48309L1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const userPath = "users/wankmal_gmail_com";
+    const binRef = ref(db, `${userPath}/bin`);
+
+
+    function updateDashboard(data) {
+      document.getElementById("bin1").innerText = data.level1.toFixed(1) + " cm";
+      document.getElementById("bin2").innerText = data.level2.toFixed(1) + " cm";
+      document.getElementById("bin3").innerText = data.level3.toFixed(1) + " cm";
+      document.getElementById("weight1").innerText = data.weight1.toFixed(2) + " g";
+      document.getElementById("weight2").innerText = data.weight2.toFixed(2) + " g";
+      document.getElementById("weight3").innerText = data.weight3.toFixed(2) + " g";
+      document.getElementById("totalReward").innerText = "RM " + data.totalReward.toFixed(2);
+      document.getElementById("totalRedeemed").innerText = "RM " + data.totalRedeemed.toFixed(2);
+      document.getElementById("pickupStatus").innerText = data.pickupStatus;
+    }
+
+    onValue(binRef, (snapshot) => {
+      if (snapshot.exists()) updateDashboard(snapshot.val());
+    });
+
+    document.getElementById("redeemBtn").addEventListener("click", () => {
+      set(ref(db, `${userPath}/bin/totalRedeemed`), Date.now());
+      update(ref(db, `${userPath}/bin`), {
+        totalReward: 0,
+        weight1: 0,
+        weight2: 0,
+        weight3: 0,
+      });
+      alert("Reward redeemed!");
+    });
+
+    document.getElementById("pickupBtn").addEventListener("click", () => {
+      update(ref(db, `${userPath}/bin`), {
+        pickupRequested: true,
+        pickupStatus: "Pending"
+      });
+      alert("Pickup requested!");
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      alert("Logging out...");
+      location.reload();
+    });
+  </script>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+    h1 { color: green; }
+    .panel { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 0 10px #ccc; margin-bottom: 10px; }
+    button { margin: 5px; padding: 10px 20px; border: none; border-radius: 5px; background: green; color: #fff; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Smart Recycling Bin Dashboard</h1>
+  <div class="panel">
+    <p>Bin 1: <span id="bin1">-</span></p>
+    <p>Bin 2: <span id="bin2">-</span></p>
+    <p>Bin 3: <span id="bin3">-</span></p>
+    <p>Paper: <span id="weight1">-</span></p>
+    <p>Plastic: <span id="weight2">-</span></p>
+    <p>Aluminium: <span id="weight3">-</span></p>
+    <p>Total Reward: <span id="totalReward">-</span></p>
+	<p>Total Redeemed: <span id="totalRedeemed">-</span></p>
+    <p>Pickup Status: <span id="pickupStatus">-</span></p>
+  </div>
+  <button id="redeemBtn">Redeem Reward</button>
+  <button id="pickupBtn">Request Pickup</button>
+  <button id="logoutBtn">Logout</button>
+</body>
+</html>
