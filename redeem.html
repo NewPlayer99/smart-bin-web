@@ -181,12 +181,86 @@
       text-align: center;
     }
 
+    /* Cash Modal Enhancements */
+    #cashModal .modal-content {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 30px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+      animation: scaleIn 0.3s ease forwards;
+    }
+
+    #cashModal input[type="text"],
+    #cashModal input[type="range"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    #cashModal label {
+      font-weight: 600;
+      display: block;
+      text-align: left;
+      color: #333;
+      margin-top: 10px;
+    }
+
+    #cashModal p {
+      margin-top: 5px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #2c3e50;
+      text-align: center;
+    }
+
+    #cashModal .redeem-btn {
+      margin-top: 10px;
+      width: 100%;
+      background-color: #2ecc71;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      color: white;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #cashModal .redeem-btn:hover {
+      background-color: #27ae60;
+    }
+
+
     @keyframes scaleIn {
       to {
         transform: scale(1);
         opacity: 1;
       }
     }
+
+    /* Spinner Loader */
+    .spinner {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #27ae60;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      animation: spin 1s linear infinite;
+      margin: auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
 
     /* Redeemed Vouchers Section */
     .redeemed-section {
@@ -347,7 +421,14 @@
         name: "RM10 Café Gift Card",
         description: "Use this gift card to enjoy RM10 worth of beverages at any partner café.",
         costPoints: 100
+      },
+      {
+        id: "voucher7",
+        name: "Transfer to Bank",
+        description: "Convert your points into cash directly to your bank account.",
+        costPoints: 0 // Not fixed — slider will control how many points to redeem
       }
+
     ];
 
     let currentUserId = null;
@@ -390,7 +471,12 @@
 
       document.querySelectorAll(".redeem-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-          redeemVoucher(btn.getAttribute("data-id"));
+          const id = btn.getAttribute("data-id");
+          if (id === "voucher7") {
+            openCashModal();
+          } else {
+            redeemVoucher(id);
+          }
         });
       });
     }
@@ -525,6 +611,122 @@
       const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
       await fetch(url);
     }
+
+    function openCashModal() {
+      const slider = document.getElementById("pointSlider");
+      slider.max = Math.floor(currentUserPoints / 10) * 10;
+      slider.value = 0;
+      updateCashDisplay();
+
+      document.getElementById("cashModal").classList.add("show");
+      document.getElementById("confirmCashBtn").addEventListener("click", confirmCashRedemption);
+      document.getElementById("cashLoading").style.display = "none";
+      document.getElementById("cashSuccess").style.display = "none";
+      document.querySelector("#confirmCashBtn").disabled = false;
+
+
+      slider.oninput = updateCashDisplay;
+    }
+
+    function updateCashDisplay() {
+      const points = parseInt(document.getElementById("pointSlider").value);
+      const cash = (points / 10).toFixed(2);
+      document.getElementById("selectedPoints").textContent = points;
+      document.getElementById("cashAmount").textContent = cash;
+    }
+
+    async function confirmCashRedemption() {
+      const points = parseInt(document.getElementById("pointSlider").value);
+      const bankAcc = document.getElementById("bankAccount").value.trim();
+      const bankName = document.getElementById("bankName").value.trim();
+
+      if (!points || !bankAcc || !bankName) {
+        alert("Please fill in all fields and choose a point amount.");
+        return;
+      }
+      document.getElementById("cashLoading").style.display = "block";
+      document.getElementById("cashSuccess").style.display = "none";
+
+
+      const pointsRef = ref(db, `users/${currentUserId}/points`);
+      await runTransaction(pointsRef, current => {
+        return (current || 0) - points;
+      });
+
+      await push(ref(db, `users/${currentUserId}/cashRedemptions`), {
+        pointsRedeemed: points,
+        amountRM: points / 10,
+        bankAccount: bankAcc,
+        bankName: bankName,
+        date: new Date().toISOString()
+      });
+
+      document.getElementById("cashLoading").style.display = "none";
+      document.getElementById("cashSuccess").style.display = "block";
+      document.getElementById("cashModal").classList.remove("show");
+      messageEl.style.color = "green";
+      messageEl.textContent = `Successfully redeemed ${points} points for RM${(points / 10).toFixed(2)}.`;
+
+      // Telegram alert
+      sendTelegramMessage("630354452", `💸 ${currentUserId} redeemed ${points} points for RM${(points / 10).toFixed(2)}. Bank: ${bankName} - ${bankAcc}`);
+
+      setTimeout(() => {
+        document.getElementById("cashLoading").style.display = "none";
+        document.getElementById("cashSuccess").style.display = "block";
+
+        // Wait 2s more before closing modal
+        setTimeout(() => {
+          document.getElementById("cashModal").classList.remove("show");
+          document.getElementById("cashSuccess").style.display = "none";
+          redeemBtn.disabled = false;
+        }, 2000);
+      }, 1500);
+
+      // Update display
+      const snapshot = await get(pointsRef);
+      currentUserPoints = snapshot.val() || 0;
+      userPointsEl.textContent = `You have ${currentUserPoints.toFixed(2)} points.`;
+      loadVouchers();
+    }
+
+    // Close modal if user clicks outside content
+    window.addEventListener("click", function(e) {
+      const modal = document.getElementById("cashModal");
+      if (e.target === modal) {
+        modal.classList.remove("show");
+      }
+    });
+
   </script>
+  <!-- Cash Redeem Modal -->
+  <div class="modal" id="cashModal">
+    <div class="modal-content">
+      <div class="modal-header">Cash Out Points</div>
+      <label>Bank Account Number:</label>
+      <input type="text" id="bankAccount" placeholder="Enter your bank account" style="width:100%; padding:8px; margin:10px 0;" />
+
+      <label>Bank Name:</label>
+      <input type="text" id="bankName" placeholder="e.g. Maybank" style="width:100%; padding:8px; margin:10px 0;" />
+
+      <label>Choose Points to Redeem:</label>
+      <input type="range" id="pointSlider" min="0" max="0" step="10" />
+      <p>You selected: <span id="selectedPoints">0</span> points (RM<span id="cashAmount">0</span>)</p>
+
+      <button class="redeem-btn" id="confirmCashBtn">Confirm Redemption</button>
+      <div id="cashLoading" style="display:none; margin-top: 20px;">
+        <div class="spinner"></div>
+        <p style="margin-top:10px;">Processing your request...</p>
+      </div>
+      <div id="cashSuccess" style="display:none; margin-top: 20px; text-align:center;">
+        <svg width="50" height="50" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#2ecc71" stroke-width="8"/>
+          <path d="M30 53 L45 68 L70 38" fill="none" stroke="#2ecc71" stroke-width="8"/>
+        </svg>
+        <p style="margin-top:10px; color:#2ecc71; font-weight:600;">Redemption Successful!</p>
+      </div>
+
+    </div>
+  </div>
+
 </body>
 </html>

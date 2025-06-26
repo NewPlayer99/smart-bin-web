@@ -160,6 +160,11 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
+
+    button[style*="background:#28a745"] {
+      font-weight: 600;
+    }
+
   </style>
 </head>
 <body>
@@ -173,6 +178,9 @@
           <th>Email</th>
           <th>Points</th>
           <th>Requests Made</th>
+          <th>Level 1</th>
+          <th>Level 2</th>
+          <th>Level 3</th>
           <th>Action</th>
         </tr>
       </thead>
@@ -224,11 +232,27 @@
         const points = user.points || 0;
         const requests = user.pickup?.history ? Object.keys(user.pickup.history).length : 0;
 
+        const l1 = user.bin?.level1 || 0;
+        const l2 = user.bin?.level2 || 0;
+        const l3 = user.bin?.level3 || 0;
+
+        const col = (val, level, uid) => {
+          if (val >= 70) {
+            return `<button onclick="notifyLevelFull('${uid}', ${level})" style="background:#28a745; color:white; padding:6px 12px; border:none; border-radius:5px; cursor:pointer;" title="Current Level: ${val}%">Full</button>`;
+          } else {
+            return `<span style="color:#d9534f; font-weight:600;" title="Current Level: ${val}%">Not Full</span>`;
+          }
+        };
+
+        setTimeout(loadUsers, 10000); // Refresh every 10 seconds
         tableBody.innerHTML += `
           <tr>
             <td>${email}</td>
             <td>${points}</td>
             <td>${requests}</td>
+            <td>${col(l1, 1, uid)}</td>
+            <td>${col(l2, 2, uid)}</td>
+            <td>${col(l3, 3, uid)}</td>
             <td><button class="review-btn" onclick="deleteUser('${uid}')">Delete</button></td>
           </tr>
         `;
@@ -254,6 +278,19 @@
       alert("User deleted.");
       loadUsers();
     };
+
+    window.notifyLevelFull = async (uid, levelNum) => {
+      const chatId = "630354452"; // Replace with dynamic chatId per user if available
+      const message = `🚨 Alert: Level ${levelNum} in ${uid.replace(/_/g, '.')} is FULL! Please take action.`;
+      
+      const res = await fetch(`https://api.telegram.org/bot7827184038:AAGmnVYHBZlwcTpvm1557vMFDCUQqtWbckc/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`);
+      if (res.ok) {
+        alert("Notification sent via Telegram.");
+      } else {
+        alert("Failed to send Telegram message.");
+      }
+    };
+
 
     window.logout = async () => {
       await set(ref(db, 'activeDeviceUser'), null);
