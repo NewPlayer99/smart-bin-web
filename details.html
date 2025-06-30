@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f7f9fc;
+      background: url("BackgroundSmartBin.png") no-repeat center center fixed;
       margin: 0;
       padding: 0;
       color: #333;
@@ -18,16 +18,17 @@
       overflow-x: hidden;
     }
     .container {
-      max-width: 500px;
-      width: 90%;
+      max-width: 1500px; /* increase this to make it wider */
+      width: 95%;         /* optional: adds flexibility on smaller screens */
       background-color: #fff;
       margin: 40px 0;
-      padding: 30px 25px 40px 25px;
+      padding: 40px 50px; /* increase padding inside the box */
       border-radius: 15px;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
       text-align: center;
       animation: fadeIn 0.8s ease forwards;
       opacity: 0;
+      font-size: 1.05rem; /* optional: enlarges all text inside */
     }
     h2 {
       margin-bottom: 24px;

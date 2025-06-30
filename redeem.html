@@ -7,23 +7,21 @@
   <link rel="stylesheet" href="style.css" />
   <style>
     body {
-      background-color: #f9f9f9;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-      box-sizing: border-box;
+      background: url("BackgroundSmartBin.png") no-repeat center center fixed;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
     }
     .container {
-      max-width: 1000px;
-      width: 100%;
+      max-width: 60%;
+      width: 60%;
       background-color: #fff;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      padding: 50px 60px;
+      border-radius: 14px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
       text-align: center;
+      font-size: 1.1rem;
     }
     h1 {
       margin-bottom: 10px;
@@ -47,7 +45,7 @@
     .voucher-viewport {
       overflow-x: auto;
       scroll-behavior: smooth;
-      width: 810px;
+      width: 1400px;
     }
     .voucher-grid {
       display: flex;
@@ -70,36 +68,39 @@
 
     .voucher-card {
       background-color: #fefefe;
-      border-radius: 12px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 25px 30px;
       transition: box-shadow 0.3s ease;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-width: 250px; /* Or 280px based on your design */
+      min-width: 300px;
+      max-width: 350px;
       flex-shrink: 0;
+      font-size: 1.05rem;
     }
     .voucher-card:hover {
       box-shadow: 0 8px 18px rgba(0,0,0,0.15);
     }
     .voucher-name {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       color: #2c3e50;
     }
+
     .voucher-desc {
-      font-size: 14px;
-      color: #777;
-      margin-bottom: 20px;
+      font-size: 16px;
+      margin-bottom: 18px;
       flex-grow: 1;
     }
+
     .voucher-points {
+      font-size: 18px;
       font-weight: 700;
       color: #27ae60;
       margin-bottom: 15px;
-      font-size: 16px;
     }
     .scroll-btn {
       background-color: #27ae60;
@@ -120,9 +121,9 @@
       background-color: #27ae60;
       border: none;
       color: white;
-      padding: 12px 0;
-      border-radius: 8px;
-      font-size: 16px;
+      font-size: 17px;
+      padding: 14px 0;
+      border-radius: 10px;
       cursor: pointer;
       transition: background-color 0.3s ease;
     }
@@ -163,20 +164,21 @@
 
     .modal-content {
       background: #fff;
-      border-radius: 12px;
-      padding: 25px 30px;
-      max-width: 480px;
+      border-radius: 16px;
+      padding: 40px 50px;
+      max-width: 600px; /* increased width */
       width: 90%;
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
       transform: scale(0.8);
       opacity: 0;
       animation: scaleIn 0.3s ease forwards;
+      font-size: 1.1rem; /* increase base font size */
     }
 
     .modal-header {
       font-weight: bold;
-      margin-bottom: 15px;
-      font-size: 1.25rem;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
       color: #155ab6;
       text-align: center;
     }
@@ -703,10 +705,10 @@
     <div class="modal-content">
       <div class="modal-header">Cash Out Points</div>
       <label>Bank Account Number:</label>
-      <input type="text" id="bankAccount" placeholder="Enter your bank account" style="width:100%; padding:8px; margin:10px 0;" />
+      <input type="text" id="bankAccount" placeholder="Enter your bank account" style="width:100%; padding:12px; margin:12px 0; font-size: 1.05rem;" />
 
       <label>Bank Name:</label>
-      <input type="text" id="bankName" placeholder="e.g. Maybank" style="width:100%; padding:8px; margin:10px 0;" />
+      <input type="text" id="bankName" placeholder="e.g. Maybank" style="width:100%; padding:12px; margin:12px 0; font-size: 1.05rem;" />
 
       <label>Choose Points to Redeem:</label>
       <input type="range" id="pointSlider" min="0" max="0" step="10" />

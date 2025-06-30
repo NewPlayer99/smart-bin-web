@@ -8,7 +8,7 @@
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f7f9fc;
+      background: url("BackgroundSmartBin.png") no-repeat center center fixed;
       margin: 0;
       padding: 0;
       color: #333;
@@ -242,13 +242,29 @@
             <label for="pickupLocation">Location:</label>
             <select id="pickupLocation" required>
               <option value="">-- Select Location --</option>
-              <option value="Block A">Block A</option>
-              <option value="Block B">Block B</option>
+
+              <optgroup label="Kolej Lelaki (Block A–F)">
+                <option value="Block A">Block A</option>
+                <option value="Block B">Block B</option>
+                <option value="Block C">Block C</option>
+                <option value="Block D">Block D</option>
+                <option value="Block E">Block E</option>
+                <option value="Block F">Block F</option>
+              </optgroup>
+
+              <optgroup label="Kolej Wanita (Block G–L)">
+                <option value="Block G">Block G</option>
+                <option value="Block H">Block H</option>
+                <option value="Block I">Block I</option>
+                <option value="Block J">Block J</option>
+                <option value="Block K">Block K</option>
+                <option value="Block L">Block L</option>
+              </optgroup>
+
               <option value="Library">Library</option>
               <option value="Faculty of Engineering">Faculty of Engineering</option>
             </select>
           </div>
-
           <button type="submit">Submit Request</button>
         </form>
       </div>
